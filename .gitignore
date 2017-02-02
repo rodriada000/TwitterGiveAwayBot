@@ -87,3 +87,9 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# Ignore log file
+logFile.txt
+
+# ignore any modifications to api_keys
+api_keys.cfg
