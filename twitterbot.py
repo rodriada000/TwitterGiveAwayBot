@@ -14,7 +14,7 @@ lock = threading.RLock() # lock shared by threads to protected shared data
 
 searchWords = ['#giveaway', 'giveaway'] # list of words to perform a Twitter search on
 dailyTweetLimit = 2400 # number of tweet/retweets per day
-hourlyTweetLimit = 20
+hourlyTweetLimit = 25
 maxFollowers = 1500 # max number of followers for account
 
 myScreenName = None
@@ -118,6 +118,7 @@ def PostTweets():
     global currentFollowers
 
     if currentRetweets >= dailyTweetLimit:
+        print('Exceeded retweet limit ({}) for the day.'.format(dailyTweetLimit))
         return # no more tweeting for the day
 
     if currentFollowers >= maxFollowers: # remove followers if past max
@@ -243,7 +244,10 @@ def doRetweet():
         print('Nothing to retweet for now ...')
     else:
         print('Retweeting ...')
-        PostTweets()
+        try:
+            PostTweets()
+        except Exception as e:
+            print('Failed to retweet, error: ', str(e))
 
     tweetTime = datetime.datetime.now() + datetime.timedelta(hours=1)
     print('Retweets finished @ ' + str(datetime.datetime.now()))
@@ -259,10 +263,16 @@ def doSearch(count=40):
     global searchTime
     global tweetsInQueue
         
-    print('Searching ...')
-    results = SearchGiveaways(count) # get collection of search results
-    with lock:
-        tweetsInQueue.extend(FilterResults(results)) # filter out any inelligible tweets and place in queue
+    if len(tweetsInQueue) > hourlyTweetLimit:
+        print('Currently have {} tweets in queue. NOT performing a search this hour ...'.format(len(tweetsInQueue)))
+    else:
+        try:
+            print('Searching ...')
+            results = SearchGiveaways(count) # get collection of search results
+            with lock:
+                tweetsInQueue.extend(FilterResults(results)) # filter out any inelligible tweets and place in queue
+        except Exception as e:
+            print('Failed to search, error: ', str(e))
 
     searchTime = datetime.datetime.now() + datetime.timedelta(hours=1) # next search will be in 1 hour
     print('Search finished @ ' + str(datetime.datetime.now()))
